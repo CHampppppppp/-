@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,7 +16,7 @@
             gap: 2rem;
             padding: 2rem;
         }
-        
+
         .bin-item {
             transition: all 0.3s ease;
             cursor: pointer;
@@ -23,7 +24,7 @@
 
         .bin-item:hover {
             transform: scale(1.05);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
         }
 
         /* 选中态 */
@@ -36,297 +37,338 @@
 
         /* 搜索高亮脉冲动画 (XN-003) */
         @keyframes pulse-highlight {
-            0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(234, 179, 8, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); }
+            0% {
+                box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(234, 179, 8, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(234, 179, 8, 0);
+            }
         }
+
         .search-match {
             animation: pulse-highlight 1.5s infinite;
-            border-color: #EAB308 !important; /* Yellow-500 */
+            border-color: #EAB308 !important;
+            /* Yellow-500 */
         }
 
         /* 滚动条美化 */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
     </style>
 </head>
+
 <body class="bg-slate-100 text-slate-800 h-screen flex flex-col overflow-hidden">
 
-<div id="app" class="flex h-full">
+    <div id="app" class="flex h-full">
 
-    <div class="flex-1 flex flex-col relative h-full">
-        <div class="bg-white p-4 shadow-sm z-20 flex justify-between items-center border-b border-slate-200">
-            <div class="flex items-center gap-3">
-                <div class="bg-blue-600 text-white p-2 rounded-lg">
-                    <i class="fa-solid fa-cubes-stacked"></i>
+        <div class="flex-1 flex flex-col relative h-full">
+            <div class="bg-white p-4 shadow-sm z-20 flex justify-between items-center border-b border-slate-200">
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-600 text-white p-2 rounded-lg">
+                        <i class="fa-solid fa-cubes-stacked"></i>
+                    </div>
+                    <h1 class="font-bold text-xl text-slate-700">虚拟货架监控视图</h1>
                 </div>
-                <h1 class="font-bold text-xl text-slate-700">虚拟货架监控视图</h1>
+
+                <div class="relative w-96">
+                    <input type="text" v-model="searchKeyword" @input="handleSearch" placeholder="输入物资名称/编号进行精准搜索..."
+                        class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
+                    <i class="fa-solid fa-search absolute left-3 top-3 text-slate-400"></i>
+                </div>
+
+                <div class="flex gap-4 text-sm">
+                    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> 正常
+                    </div>
+                    <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-slate-300"></span> 空置
+                    </div>
+                    <div class="flex items-center gap-2"><span
+                            class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span> 预警</div>
+                </div>
             </div>
 
-            <div class="relative w-96">
-                <input 
-                    type="text" 
-                    v-model="searchKeyword"
-                    @input="handleSearch"
-                    placeholder="输入物资名称/编号进行精准搜索..." 
-                    class="w-full pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                >
-                <i class="fa-solid fa-search absolute left-3 top-3 text-slate-400"></i>
-            </div>
+            <div class="flex-1 overflow-auto bg-slate-100 p-8 relative">
+                <div class="mb-6">
+                    <h2 class="text-lg font-bold text-slate-500 mb-4 flex items-center">
+                        <i class="fa-solid fa-layer-group mr-2"></i> A区 - 电子元器件库
+                    </h2>
 
-            <div class="flex gap-4 text-sm">
-                <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-emerald-500"></span> 正常</div>
-                <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-slate-300"></span> 空置</div>
-                <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></span> 预警</div>
-            </div>
-        </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        <div v-for="shelf in shelves" :key="shelf.id"
+                            class="bg-white p-4 rounded-xl shadow border border-slate-200">
+                            <div class="flex justify-between mb-2 text-xs text-slate-400 uppercase font-bold">
+                                <span>{{ shelf.code }}</span>
+                                <span>{{ shelf.type }}</span>
+                            </div>
 
-        <div class="flex-1 overflow-auto bg-slate-100 p-8 relative">
-            <div class="mb-6">
-                <h2 class="text-lg font-bold text-slate-500 mb-4 flex items-center">
-                    <i class="fa-solid fa-layer-group mr-2"></i> A区 - 电子元器件库
-                </h2>
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    <div v-for="shelf in shelves" :key="shelf.id" class="bg-white p-4 rounded-xl shadow border border-slate-200">
-                        <div class="flex justify-between mb-2 text-xs text-slate-400 uppercase font-bold">
-                            <span>{{ shelf.code }}</span>
-                            <span>{{ shelf.type }}</span>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-2">
-                            <div 
-                                v-for="bin in shelf.bins" 
-                                :key="bin.id"
-                                @click="selectBin(bin)"
-                                :class="[
+                            <div class="grid grid-cols-2 gap-2">
+                                <div v-for="bin in shelf.bins" :key="bin.id" @click="selectBin(bin)" :class="[
                                     'bin-item h-20 rounded-lg border-2 flex flex-col items-center justify-center relative p-2',
-                                    getBinColorClass(bin),
+                                    getBinColorClass(bin, shelf),
                                     { 'bin-selected': currentBin && currentBin.id === bin.id },
                                     { 'search-match': isMatch(bin) }
-                                ]"
-                            >
-                                <span class="text-xs font-mono absolute top-1 left-1 opacity-50">{{ bin.code }}</span>
-                                
-                                <div v-if="bin.material" class="text-center">
-                                    <i :class="['fa-solid', bin.icon, 'text-xl mb-1']"></i>
-                                    <div class="text-xs font-bold truncate w-20">{{ bin.material }}</div>
-                                    <div class="text-[10px] opacity-75">Qty: {{ bin.qty }}</div>
-                                </div>
-                                <div v-else class="text-slate-300">
-                                    <i class="fa-solid fa-box-open text-xl"></i>
-                                    <div class="text-[10px] mt-1">空闲</div>
-                                </div>
+                                ]">
+                                    <span class="text-xs font-mono absolute top-1 left-1 opacity-50">{{ bin.code
+                                        }}</span>
 
-                                <span v-if="bin.status === 'warning'" class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full shadow-sm">
-                                    !
-                                </span>
+                                    <div v-if="bin.material" class="text-center">
+                                        <i :class="['fa-solid', bin.icon, 'text-xl mb-1']"></i>
+                                        <div class="text-xs font-bold truncate w-20">{{ bin.material }}</div>
+                                        <div class="text-[10px] opacity-75">Qty: {{ bin.qty }}</div>
+                                    </div>
+                                    <div v-else class="text-slate-300">
+                                        <i class="fa-solid fa-box-open text-xl"></i>
+                                        <div class="text-[10px] mt-1">空闲</div>
+                                    </div>
+
+                                    <span v-if="bin.status === 'warning'"
+                                        class="absolute -top-2 -right-2 bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full shadow-sm">
+                                        !
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="bg-white border-t border-slate-200 p-2 text-xs text-slate-500 flex justify-between">
-            <span>系统状态: 在线 | 渲染引擎: WebGL (Simulated)</span>
-            <span>数据最后更新: {{ lastUpdateTime }}</span>
-        </div>
-    </div>
-
-    <transition enter-active-class="transition ease-out duration-300" enter-from-class="transform translate-x-full" enter-to-class="transform translate-x-0" leave-active-class="transition ease-in duration-200" leave-from-class="transform translate-x-0" leave-to-class="transform translate-x-full">
-        <div v-if="currentBin" class="w-96 bg-white shadow-2xl border-l border-slate-200 flex flex-col z-30">
-            <div class="p-5 border-b border-slate-100 flex justify-between items-start bg-slate-50">
-                <div>
-                    <h3 class="font-bold text-lg text-slate-800">货位详情</h3>
-                    <p class="text-sm text-slate-500 font-mono">{{ currentBin.code }}</p>
-                </div>
-                <button @click="currentBin = null" class="text-slate-400 hover:text-slate-600">
-                    <i class="fa-solid fa-xmark text-xl"></i>
-                </button>
+            <div class="bg-white border-t border-slate-200 p-2 text-xs text-slate-500 flex justify-between">
+                <span>系统状态: 在线 | 渲染引擎: WebGL (Simulated)</span>
+                <span>数据最后更新: {{ lastUpdateTime }}</span>
             </div>
+        </div>
 
-            <div class="flex-1 overflow-y-auto p-5">
-                
-                <div v-if="!currentBin.material" class="text-center py-10 text-slate-400">
-                    <i class="fa-solid fa-box-open text-4xl mb-3"></i>
-                    <p>当前货位为空</p>
-                    <button class="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm hover:bg-blue-100">
-                        执行入库分配
+        <transition enter-active-class="transition ease-out duration-300" enter-from-class="transform translate-x-full"
+            enter-to-class="transform translate-x-0" leave-active-class="transition ease-in duration-200"
+            leave-from-class="transform translate-x-0" leave-to-class="transform translate-x-full">
+            <div v-if="currentBin" class="w-96 bg-white shadow-2xl border-l border-slate-200 flex flex-col z-30">
+                <div class="p-5 border-b border-slate-100 flex justify-between items-start bg-slate-50">
+                    <div>
+                        <h3 class="font-bold text-lg text-slate-800">货位详情</h3>
+                        <p class="text-sm text-slate-500 font-mono">{{ currentBin.code }}</p>
+                    </div>
+                    <button @click="currentBin = null" class="text-slate-400 hover:text-slate-600">
+                        <i class="fa-solid fa-xmark text-xl"></i>
                     </button>
                 </div>
 
-                <div v-else>
-                    <div class="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-100">
-                        <div class="flex items-center gap-3 mb-3">
-                            <div class="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm text-blue-600 text-xl">
-                                <i :class="['fa-solid', currentBin.icon]"></i>
+                <div class="flex-1 overflow-y-auto p-5">
+
+                    <div v-if="!currentBin.material" class="text-center py-10 text-slate-400">
+                        <i class="fa-solid fa-box-open text-4xl mb-3"></i>
+                        <p>当前货位为空</p>
+                        <button class="mt-4 px-4 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm hover:bg-blue-100">
+                            执行入库分配
+                        </button>
+                    </div>
+
+                    <div v-else>
+                        <div class="bg-slate-50 rounded-xl p-4 mb-6 border border-slate-100">
+                            <div class="flex items-center gap-3 mb-3">
+                                <div
+                                    class="w-12 h-12 bg-white rounded-lg flex items-center justify-center shadow-sm text-blue-600 text-xl">
+                                    <i :class="['fa-solid', currentBin.icon]"></i>
+                                </div>
+                                <div>
+                                    <div class="font-bold text-slate-800">{{ currentBin.material }}</div>
+                                    <div class="text-xs text-slate-500">ID: {{ currentBin.matId }}</div>
+                                </div>
                             </div>
-                            <div>
-                                <div class="font-bold text-slate-800">{{ currentBin.material }}</div>
-                                <div class="text-xs text-slate-500">ID: {{ currentBin.matId }}</div>
+                            <div class="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <div class="text-slate-400 text-xs">库存数量</div>
+                                    <div class="font-mono font-bold">{{ currentBin.qty }} {{ currentBin.unit }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-400 text-xs">批次号</div>
+                                    <div class="font-mono">{{ currentBin.batch }}</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-400 text-xs">入库时间</div>
+                                    <div>2023-10-12</div>
+                                </div>
+                                <div>
+                                    <div class="text-slate-400 text-xs">状态</div>
+                                    <div
+                                        :class="currentBin.status === 'warning' ? 'text-red-500 font-bold' : 'text-emerald-500 font-bold'">
+                                        {{ currentBin.status === 'warning' ? '库存告警' : '正常' }}
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <div class="text-slate-400 text-xs">库存数量</div>
-                                <div class="font-mono font-bold">{{ currentBin.qty }} {{ currentBin.unit }}</div>
+
+                        <div class="mb-6">
+                            <h4 class="font-bold text-sm text-slate-700 mb-3 flex items-center">
+                                <i class="fa-solid fa-clock-rotate-left mr-2"></i> 全生命周期追溯
+                            </h4>
+                            <div class="relative pl-4 border-l-2 border-slate-200 space-y-6">
+                                <div class="relative">
+                                    <span
+                                        class="absolute -left-[21px] top-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></span>
+                                    <div class="text-xs text-slate-400">刚刚</div>
+                                    <div class="text-sm font-medium">盘点核查完成</div>
+                                    <div class="text-xs text-slate-500">操作人: 张三</div>
+                                </div>
+                                <div class="relative">
+                                    <span
+                                        class="absolute -left-[21px] top-1 w-3 h-3 bg-slate-300 rounded-full border-2 border-white"></span>
+                                    <div class="text-xs text-slate-400">2023-10-15 14:30</div>
+                                    <div class="text-sm font-medium">部分出库 (50个)</div>
+                                    <div class="text-xs text-slate-500">关联单号: OUT-2023001</div>
+                                </div>
+                                <div class="relative">
+                                    <span
+                                        class="absolute -left-[21px] top-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white"></span>
+                                    <div class="text-xs text-slate-400">2023-10-12 09:00</div>
+                                    <div class="text-sm font-medium">入库上架</div>
+                                    <div class="text-xs text-slate-500">来源: 采购入库</div>
+                                </div>
                             </div>
-                            <div>
-                                <div class="text-slate-400 text-xs">批次号</div>
-                                <div class="font-mono">{{ currentBin.batch }}</div>
-                            </div>
-                            <div>
-                                <div class="text-slate-400 text-xs">入库时间</div>
-                                <div>2023-10-12</div>
-                            </div>
-                            <div>
-                                <div class="text-slate-400 text-xs">状态</div>
-                                <div :class="currentBin.status === 'warning' ? 'text-red-500 font-bold' : 'text-emerald-500 font-bold'">
-                                    {{ currentBin.status === 'warning' ? '库存告警' : '正常' }}
+                        </div>
+
+                        <div>
+                            <h4 class="font-bold text-sm text-slate-700 mb-3 flex items-center">
+                                <i class="fa-solid fa-video mr-2"></i> 实时监控/回放
+                            </h4>
+                            <div
+                                class="bg-black rounded-lg h-32 flex items-center justify-center text-slate-500 relative overflow-hidden group cursor-pointer">
+                                <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60"
+                                    class="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-75 transition-opacity">
+                                <div class="z-10 flex flex-col items-center">
+                                    <i class="fa-solid fa-play-circle text-3xl text-white mb-1"></i>
+                                    <span class="text-xs text-white">点击播放回放</span>
                                 </div>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <div class="mb-6">
-                        <h4 class="font-bold text-sm text-slate-700 mb-3 flex items-center">
-                            <i class="fa-solid fa-clock-rotate-left mr-2"></i> 全生命周期追溯
-                        </h4>
-                        <div class="relative pl-4 border-l-2 border-slate-200 space-y-6">
-                            <div class="relative">
-                                <span class="absolute -left-[21px] top-1 w-3 h-3 bg-blue-500 rounded-full border-2 border-white"></span>
-                                <div class="text-xs text-slate-400">刚刚</div>
-                                <div class="text-sm font-medium">盘点核查完成</div>
-                                <div class="text-xs text-slate-500">操作人: 张三</div>
-                            </div>
-                            <div class="relative">
-                                <span class="absolute -left-[21px] top-1 w-3 h-3 bg-slate-300 rounded-full border-2 border-white"></span>
-                                <div class="text-xs text-slate-400">2023-10-15 14:30</div>
-                                <div class="text-sm font-medium">部分出库 (50个)</div>
-                                <div class="text-xs text-slate-500">关联单号: OUT-2023001</div>
-                            </div>
-                            <div class="relative">
-                                <span class="absolute -left-[21px] top-1 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white"></span>
-                                <div class="text-xs text-slate-400">2023-10-12 09:00</div>
-                                <div class="text-sm font-medium">入库上架</div>
-                                <div class="text-xs text-slate-500">来源: 采购入库</div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h4 class="font-bold text-sm text-slate-700 mb-3 flex items-center">
-                            <i class="fa-solid fa-video mr-2"></i> 实时监控/回放
-                        </h4>
-                        <div class="bg-black rounded-lg h-32 flex items-center justify-center text-slate-500 relative overflow-hidden group cursor-pointer">
-                            <img src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-1.2.1&auto=format&fit=crop&w=500&q=60" class="absolute inset-0 w-full h-full object-cover opacity-50 group-hover:opacity-75 transition-opacity">
-                            <div class="z-10 flex flex-col items-center">
-                                <i class="fa-solid fa-play-circle text-3xl text-white mb-1"></i>
-                                <span class="text-xs text-white">点击播放回放</span>
-                            </div>
-                        </div>
-                    </div>
+                <div class="p-4 border-t border-slate-200 bg-slate-50 grid grid-cols-2 gap-3"
+                    v-if="currentBin.material">
+                    <button
+                        class="py-2 px-4 bg-white border border-slate-300 rounded-lg text-sm text-slate-700 hover:bg-slate-50">移库操作</button>
+                    <button
+                        class="py-2 px-4 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 shadow-sm">出库下架</button>
                 </div>
             </div>
-            
-            <div class="p-4 border-t border-slate-200 bg-slate-50 grid grid-cols-2 gap-3" v-if="currentBin.material">
-                <button class="py-2 px-4 bg-white border border-slate-300 rounded-lg text-sm text-slate-700 hover:bg-slate-50">移库操作</button>
-                <button class="py-2 px-4 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 shadow-sm">出库下架</button>
-            </div>
-        </div>
-    </transition>
-</div>
+        </transition>
+    </div>
 
-<script>
-    const { createApp } = Vue;
+    <script>
+        const { createApp } = Vue;
 
-    createApp({
-        data() {
-            return {
-                searchKeyword: '',
-                currentBin: null,
-                lastUpdateTime: new Date().toLocaleTimeString(),
-                // 模拟仓库数据结构
-                shelves: [
-                    {
-                        id: 'S01', code: 'A-01货架', type: '重型货架',
-                        bins: [
-                            { id: 101, code: 'A-01-1-1', material: '高性能CPU i9', matId: 'M-8821', qty: 50, unit: '盒', batch: 'B20231011', status: 'normal', icon: 'fa-microchip' },
-                            { id: 102, code: 'A-01-1-2', material: '512G 固态硬盘', matId: 'M-3321', qty: 120, unit: '个', batch: 'B20231012', status: 'normal', icon: 'fa-hard-drive' },
-                            { id: 103, code: 'A-01-2-1', material: null }, // 空位
-                            { id: 104, code: 'A-01-2-2', material: 'DDR5 内存条', matId: 'M-1102', qty: 10, unit: '条', batch: 'B20230101', status: 'warning', icon: 'fa-memory' } // 预警
-                        ]
-                    },
-                    {
-                        id: 'S02', code: 'A-02货架', type: '中型货架',
-                        bins: [
-                            { id: 201, code: 'A-02-1-1', material: '高清显示屏', matId: 'M-9901', qty: 30, unit: '台', batch: 'B20230909', status: 'normal', icon: 'fa-desktop' },
-                            { id: 202, code: 'A-02-1-2', material: null },
-                            { id: 203, code: 'A-02-2-1', material: '无线鼠标', matId: 'M-7721', qty: 200, unit: '个', batch: 'B20231005', status: 'normal', icon: 'fa-computer-mouse' },
-                            { id: 204, code: 'A-02-2-2', material: '机械键盘', matId: 'M-7722', qty: 5, unit: '把', batch: 'B20221230', status: 'warning', icon: 'fa-keyboard' } // 预警
-                        ]
-                    },
-                    {
-                        id: 'S03', code: 'A-03货架', type: '轻型货架',
-                        bins: [
-                            { id: 301, code: 'A-03-1-1', material: '电源适配器', matId: 'M-5511', qty: 80, unit: '个', batch: 'B20231001', status: 'normal', icon: 'fa-plug' },
-                            { id: 302, code: 'A-03-1-2', material: 'HDMI高清线', matId: 'M-5522', qty: 500, unit: '条', batch: 'B20231001', status: 'normal', icon: 'fa-code-branch' },
-                            { id: 303, code: 'A-03-2-1', material: null },
-                            { id: 304, code: 'A-03-2-2', material: null }
-                        ]
-                    },
-                    {
-                        id: 'S04', code: 'A-04货架', type: '返修区',
-                        bins: [
-                            { id: 401, code: 'A-04-1-1', material: '待检主板', matId: 'M-0011', qty: 3, unit: '块', batch: 'R-202310', status: 'warning', icon: 'fa-triangle-exclamation' },
-                            { id: 402, code: 'A-04-1-2', material: null },
-                            { id: 403, code: 'A-04-2-1', material: null },
-                            { id: 404, code: 'A-04-2-2', material: null }
-                        ]
-                    }
-                ]
-            }
-        },
-        methods: {
-            // XN-002: 选中货位逻辑
-            selectBin(bin) {
-                this.currentBin = bin;
-                // 这里可以扩展调用后端 API 获取实时详情
-                console.log('Use Case XN-002: Querying details for bin', bin.code);
-            },
-            // 样式计算逻辑
-            getBinColorClass(bin) {
-                if (!bin.material) return 'bg-slate-100 border-slate-200 text-slate-400 hover:border-slate-400';
-                if (bin.status === 'warning') return 'bg-red-50 border-red-300 text-red-700 hover:border-red-500';
-                return 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:border-emerald-500';
-            },
-            // XN-003: 搜索匹配逻辑
-            isMatch(bin) {
-                if (!this.searchKeyword || !bin.material) return false;
-                const kw = this.searchKeyword.toLowerCase();
-                return bin.material.toLowerCase().includes(kw) || 
-                       bin.code.toLowerCase().includes(kw) ||
-                       bin.matId.toLowerCase().includes(kw);
-            },
-            // 搜索输入防抖处理 (模拟)
-            handleSearch() {
-                // 如果有匹配项，自动可以在这里做一些自动滚动定位的逻辑
-                if(this.searchKeyword.length > 0) {
-                    console.log('Use Case XN-003: Searching for', this.searchKeyword);
+        createApp({
+            data() {
+                return {
+                    searchKeyword: '',
+                    currentBin: null,
+                    lastUpdateTime: new Date().toLocaleTimeString(),
+                    // 模拟仓库数据结构
+                    shelves: [
+                        {
+                            id: 'S01', code: 'A-01货架', type: '重型货架',
+                            bins: [
+                                { id: 101, code: 'A-01-1-1', material: '高性能CPU i9', matId: 'M-8821', qty: 50, unit: '盒', batch: 'B20231011', status: 'normal', icon: 'fa-microchip' },
+                                { id: 102, code: 'A-01-1-2', material: '512G 固态硬盘', matId: 'M-3321', qty: 120, unit: '个', batch: 'B20231012', status: 'normal', icon: 'fa-hard-drive' },
+                                { id: 103, code: 'A-01-2-1', material: null }, // 空位
+                                { id: 104, code: 'A-01-2-2', material: 'DDR5 内存条', matId: 'M-1102', qty: 10, unit: '条', batch: 'B20230101', status: 'warning', icon: 'fa-memory' } // 预警
+                            ]
+                        },
+                        {
+                            id: 'S02', code: 'A-02货架', type: '中型货架',
+                            bins: [
+                                { id: 201, code: 'A-02-1-1', material: '高清显示屏', matId: 'M-9901', qty: 30, unit: '台', batch: 'B20230909', status: 'normal', icon: 'fa-desktop' },
+                                { id: 202, code: 'A-02-1-2', material: null },
+                                { id: 203, code: 'A-02-2-1', material: '无线鼠标', matId: 'M-7721', qty: 200, unit: '个', batch: 'B20231005', status: 'normal', icon: 'fa-computer-mouse' },
+                                { id: 204, code: 'A-02-2-2', material: '机械键盘', matId: 'M-7722', qty: 5, unit: '把', batch: 'B20221230', status: 'warning', icon: 'fa-keyboard' } // 预警
+                            ]
+                        },
+                        {
+                            id: 'S03', code: 'A-03货架', type: '轻型货架',
+                            bins: [
+                                { id: 301, code: 'A-03-1-1', material: '电源适配器', matId: 'M-5511', qty: 80, unit: '个', batch: 'B20231001', status: 'normal', icon: 'fa-plug' },
+                                { id: 302, code: 'A-03-1-2', material: 'HDMI高清线', matId: 'M-5522', qty: 500, unit: '条', batch: 'B20231001', status: 'normal', icon: 'fa-code-branch' },
+                                { id: 303, code: 'A-03-2-1', material: null },
+                                { id: 304, code: 'A-03-2-2', material: null }
+                            ]
+                        },
+                        {
+                            id: 'S04', code: 'A-04货架', type: '返修区',
+                            bins: [
+                                { id: 401, code: 'A-04-1-1', material: '待检主板', matId: 'M-0011', qty: 3, unit: '块', batch: 'R-202310', status: 'warning', icon: 'fa-triangle-exclamation' },
+                                { id: 402, code: 'A-04-1-2', material: null },
+                                { id: 403, code: 'A-04-2-1', material: null },
+                                { id: 404, code: 'A-04-2-2', material: null }
+                            ]
+                        }
+                    ]
                 }
+            },
+            methods: {
+                // XN-002: 选中货位逻辑
+                selectBin(bin) {
+                    this.currentBin = bin;
+                    // 这里可以扩展调用后端 API 获取实时详情
+                    console.log('Use Case XN-002: Querying details for bin', bin.code);
+                },
+                // 样式计算逻辑
+                getBinColorClass(bin, shelf) {
+                    if (!bin.material) return 'bg-slate-100 border-slate-200 text-slate-400 hover:border-slate-400';
+                    if (bin.status === 'warning') return 'bg-red-50 border-red-300 text-red-700 hover:border-red-500';
+
+                    // Color coding based on shelf type
+                    if (shelf && shelf.type) {
+                        if (shelf.type === '重型货架') return 'bg-blue-50 border-blue-300 text-blue-700 hover:border-blue-500';
+                        if (shelf.type === '中型货架') return 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:border-emerald-500';
+                        if (shelf.type === '轻型货架') return 'bg-amber-50 border-amber-300 text-amber-700 hover:border-amber-500';
+                        if (shelf.type === '返修区') return 'bg-purple-50 border-purple-300 text-purple-700 hover:border-purple-500';
+                    }
+
+                    return 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:border-emerald-500';
+                },
+                // XN-003: 搜索匹配逻辑
+                isMatch(bin) {
+                    if (!this.searchKeyword || !bin.material) return false;
+                    const kw = this.searchKeyword.toLowerCase();
+                    return bin.material.toLowerCase().includes(kw) ||
+                        bin.code.toLowerCase().includes(kw) ||
+                        bin.matId.toLowerCase().includes(kw);
+                },
+                // 搜索输入防抖处理 (模拟)
+                handleSearch() {
+                    // 如果有匹配项，自动可以在这里做一些自动滚动定位的逻辑
+                    if (this.searchKeyword.length > 0) {
+                        console.log('Use Case XN-003: Searching for', this.searchKeyword);
+                    }
+                }
+            },
+            mounted() {
+                // XN-007: 模拟出入库联动，定时刷新数据
+                setInterval(() => {
+                    this.lastUpdateTime = new Date().toLocaleTimeString();
+                    // 这里可以添加模拟库存变动的逻辑
+                }, 30000);
             }
-        },
-        mounted() {
-            // XN-007: 模拟出入库联动，定时刷新数据
-            setInterval(() => {
-                this.lastUpdateTime = new Date().toLocaleTimeString();
-                // 这里可以添加模拟库存变动的逻辑
-            }, 30000);
-        }
-    }).mount('#app')
-</script>
+        }).mount('#app')
+    </script>
 </body>
+
 </html>

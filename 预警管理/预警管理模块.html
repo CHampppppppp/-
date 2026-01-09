@@ -57,8 +57,9 @@
                 <ul class="space-y-2 mt-4">
                     <li v-for="rule in filteredRules" :key="rule.key">
                         <button @click="selectRule(rule)"
-                            :class="['w-full text-left p-3 rounded-lg border', (current && current.key===rule.key) ? 'bg-slate-100 border-slate-300' : 'hover:bg-slate-50']">
-                            <div class="flex justify-between">
+                            :class="['w-full text-left p-3 rounded-lg border flex gap-3', (current && current.key===rule.key) ? 'bg-slate-100 border-slate-300' : 'hover:bg-slate-50']">
+                            <div :class="['w-1.5 self-stretch rounded-full', rule.color]"></div>
+                            <div class="flex-1 flex justify-between">
                                 <div>
                                     <div class="font-medium">{{ rule.name }}</div>
                                     <div class="text-xs text-slate-400">{{ rule.desc }}</div>
@@ -217,14 +218,14 @@
                 return {
                     filter: '',
                     rules: [
-                        { key: 'safe_stock', name: '安全库存', desc: '低于该阈值触发入库提醒', valueDisplay: '—' },
-                        { key: 'over_stock', name: '超限库存', desc: '高于该阈值触发超限告警', valueDisplay: '—' },
-                        { key: 'near_expire', name: '临期提醒', desc: '在到期前N天提醒', valueDisplay: '—' },
-                        { key: 'expired', name: '过期处理', desc: '过期触发下架/审计', valueDisplay: '—' },
-                        { key: 'low_turnover', name: '低周转', desc: '周转率低于阈值提醒', valueDisplay: '—' },
-                        { key: 'abnormal_pick', name: '异常领用', desc: '异常出库行为触发告警', valueDisplay: '—' },
-                        { key: 'contract_over', name: '合同金额超限', desc: '合同金额超过阈值提醒', valueDisplay: '—' },
-                        { key: 'variety_ratio', name: '品种占比', desc: '总仓储某类品种占比阈值', valueDisplay: '—' }
+                        { key: 'safe_stock', name: '安全库存', desc: '低于该阈值触发入库提醒', valueDisplay: '—', color: 'bg-emerald-500' },
+                        { key: 'over_stock', name: '超限库存', desc: '高于该阈值触发超限告警', valueDisplay: '—', color: 'bg-red-500' },
+                        { key: 'near_expire', name: '临期提醒', desc: '在到期前N天提醒', valueDisplay: '—', color: 'bg-orange-500' },
+                        { key: 'expired', name: '过期处理', desc: '过期触发下架/审计', valueDisplay: '—', color: 'bg-slate-700' },
+                        { key: 'low_turnover', name: '低周转', desc: '周转率低于阈值提醒', valueDisplay: '—', color: 'bg-yellow-500' },
+                        { key: 'abnormal_pick', name: '异常领用', desc: '异常出库行为触发告警', valueDisplay: '—', color: 'bg-purple-500' },
+                        { key: 'contract_over', name: '合同金额超限', desc: '合同金额超过阈值提醒', valueDisplay: '—', color: 'bg-blue-500' },
+                        { key: 'variety_ratio', name: '品种占比', desc: '总仓储某类品种占比阈值', valueDisplay: '—', color: 'bg-pink-500' }
                     ],
                     current: null,
                     form: { threshold: 0, periodDays: 1, enabled: true, note: '' },
