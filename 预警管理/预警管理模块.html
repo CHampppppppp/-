@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>智慧仓储 - 预警管理模块</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* 基本布局 */
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* 表单错误提示 */
+        .input-error {
+            border-color: #ef4444 !important;
+            box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.08);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 h-screen text-slate-800">
+    <div id="app" class="h-full flex">
+
+        <!-- 左侧: 导航与规则列表 -->
+        <aside class="w-96 bg-white border-r border-slate-200 p-6 flex flex-col gap-4">
+            <div class="flex items-center gap-3 mb-2">
+                <div class="bg-slate-900 text-white p-2 rounded">
+                    <i class="fa-solid fa-bell"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold">预警管理</h1>
+                    <div class="text-xs text-slate-400">配置与管理各类预警阈值</div>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <input type="text" v-model="filter" placeholder="搜索规则..."
+                    class="w-full px-3 py-2 border rounded text-sm focus:outline-none" />
+                <button @click="openHistory" class="px-3 py-2 bg-slate-100 border rounded text-sm">历史</button>
+            </div>
+
+            <div class="flex-1 overflow-auto hide-scrollbar">
+                <ul class="space-y-2 mt-4">
+                    <li v-for="rule in filteredRules" :key="rule.key">
+                        <button @click="selectRule(rule)"
+                            :class="['w-full text-left p-3 rounded-lg border', (current && current.key===rule.key) ? 'bg-slate-100 border-slate-300' : 'hover:bg-slate-50']">
+                            <div class="flex justify-between">
+                                <div>
+                                    <div class="font-medium">{{ rule.name }}</div>
+                                    <div class="text-xs text-slate-400">{{ rule.desc }}</div>
+                                </div>
+                                <div class="text-xs text-slate-500">{{ rule.valueDisplay }}</div>
+                            </div>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="pt-4 border-t border-slate-200">
+                <div class="text-xs text-slate-500 mb-2">通知方式</div>
+                <div class="flex items-center gap-3">
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" v-model="notify.web" class="form-checkbox" /> 系统消息
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <input type="checkbox" v-model="notify.sms" class="form-checkbox" /> 短信通知
+                    </label>
+                    <button @click="previewSms"
+                        class="ml-auto text-sm px-3 py-1 bg-slate-100 border rounded">预览短信</button>
+                </div>
+            </div>
+        </aside>
+
+        <!-- 右侧: 详情与编辑区 -->
+        <main class="flex-1 p-8 overflow-auto">
+            <div class="bg-white rounded-lg shadow border border-slate-200 p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <h2 class="text-xl font-bold" v-if="current">{{ current.name }}</h2>
+                        <p class="text-sm text-slate-500" v-if="current">{{ current.desc }}</p>
+                    </div>
+                    <div class="text-sm text-slate-400">状态: <span :class="currentStatusClass">{{ statusLabel }}</span>
+                    </div>
+                </div>
+
+                <form @submit.prevent="saveConfig" class="grid grid-cols-12 gap-4">
+                    <!-- 左栏：参数表单 -->
+                    <div class="col-span-8">
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-3 gap-3 items-center">
+                                <label class="text-sm text-slate-600">阈值</label>
+                                <input type="number" step="1" v-model.number="form.threshold"
+                                    :class="['col-span-2 px-3 py-2 border rounded', errors.threshold ? 'input-error' : '']" />
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-3 items-center">
+                                <label class="text-sm text-slate-600">触发周期(天)</label>
+                                <input type="number" step="1" v-model.number="form.periodDays"
+                                    :class="['col-span-2 px-3 py-2 border rounded', errors.periodDays ? 'input-error' : '']" />
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-3 items-center">
+                                <label class="text-sm text-slate-600">是否启用</label>
+                                <div class="col-span-2">
+                                    <label class="inline-flex items-center gap-2">
+                                        <input type="checkbox" v-model="form.enabled" class="form-checkbox" /> 启用此规则
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-3 items-start">
+                                <label class="text-sm text-slate-600">说明</label>
+                                <textarea v-model="form.note" class="col-span-2 px-3 py-2 border rounded h-24 text-sm"
+                                    placeholder="对阈值说明或使用场景做简短说明"></textarea>
+                            </div>
+
+                            <div v-if="errorMessage" class="text-sm text-red-600">{{ errorMessage }}</div>
+                        </div>
+                    </div>
+
+                    <!-- 右栏：预览与操作 -->
+                    <div class="col-span-4 border-l border-slate-100 pl-4">
+                        <div class="mb-4">
+                            <div class="text-sm text-slate-500 mb-2">生效预览</div>
+                            <div class="bg-slate-50 p-3 rounded">
+                                <div class="text-sm"><strong>阈值</strong>: {{ form.threshold }}</div>
+                                <div class="text-sm"><strong>周期</strong>: {{ form.periodDays }} 天</div>
+                                <div class="text-sm"><strong>启用</strong>: {{ form.enabled ? '是' : '否' }}</div>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-3">
+                            <button type="submit"
+                                class="flex-1 py-2 bg-sky-600 text-white rounded hover:bg-sky-700">保存配置</button>
+                            <button type="button" @click="resetForm" class="py-2 px-3 border rounded">重置</button>
+                        </div>
+
+                        <div class="mt-4 text-xs text-slate-400">
+                            <div>操作说明：</div>
+                            <ul class="list-disc list-inside">
+                                <li>参数必须为非负整数。</li>
+                                <li>保存后会写入配置历史，用于审计与回滚。</li>
+                            </ul>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </main>
+
+        <!-- 短信预览与历史模态 -->
+        <div v-if="showSmsPreview" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div class="bg-white w-[640px] rounded shadow-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold">短信通知预览</h3>
+                    <button @click="showSmsPreview=false" class="text-slate-500"><i
+                            class="fa-solid fa-xmark"></i></button>
+                </div>
+                <div class="bg-slate-50 p-4 rounded text-sm">
+                    {{ smsPreviewText }}
+                </div>
+            </div>
+        </div>
+
+        <div v-if="showHistory" class="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+            <div class="bg-white w-3/4 rounded shadow-lg p-6 max-h-[80vh] overflow-auto">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="font-bold">配置历史</h3>
+                    <button @click="showHistory=false" class="text-slate-500"><i class="fa-solid fa-xmark"></i></button>
+                </div>
+                <table class="w-full text-sm border-collapse">
+                    <thead class="text-slate-500">
+                        <tr>
+                            <th class="text-left p-2">时间</th>
+                            <th class="text-left p-2">操作人</th>
+                            <th class="text-left p-2">规则</th>
+                            <th class="text-left p-2">变更</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr v-for="(h,i) in history" :key="i" class="border-t">
+                            <td class="p-2">{{ h.time }}</td>
+                            <td class="p-2">{{ h.user }}</td>
+                            <td class="p-2">{{ h.ruleName }}</td>
+                            <td class="p-2">
+                                <pre class="text-xs whitespace-pre-wrap">{{ h.delta }}</pre>
+                            </td>
+                        </tr>
+                        <tr v-if="history.length===0">
+                            <td colspan="4" class="p-4 text-slate-400">暂无历史记录</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    filter: '',
+                    rules: [
+                        { key: 'safe_stock', name: '安全库存', desc: '低于该阈值触发入库提醒', valueDisplay: '—' },
+                        { key: 'over_stock', name: '超限库存', desc: '高于该阈值触发超限告警', valueDisplay: '—' },
+                        { key: 'near_expire', name: '临期提醒', desc: '在到期前N天提醒', valueDisplay: '—' },
+                        { key: 'expired', name: '过期处理', desc: '过期触发下架/审计', valueDisplay: '—' },
+                        { key: 'low_turnover', name: '低周转', desc: '周转率低于阈值提醒', valueDisplay: '—' },
+                        { key: 'abnormal_pick', name: '异常领用', desc: '异常出库行为触发告警', valueDisplay: '—' },
+                        { key: 'contract_over', name: '合同金额超限', desc: '合同金额超过阈值提醒', valueDisplay: '—' },
+                        { key: 'variety_ratio', name: '品种占比', desc: '总仓储某类品种占比阈值', valueDisplay: '—' }
+                    ],
+                    current: null,
+                    form: { threshold: 0, periodDays: 1, enabled: true, note: '' },
+                    errors: {},
+                    errorMessage: '',
+                    notify: { web: true, sms: false },
+                    showSmsPreview: false,
+                    showHistory: false,
+                    history: [],
+                    status: 'idle' // idle / validating / saved / saving
+                };
+            },
+            computed: {
+                filteredRules() {
+                    const kw = this.filter.trim().toLowerCase();
+                    if (!kw) return this.rules;
+                    return this.rules.filter(r => r.name.toLowerCase().includes(kw) || r.desc.toLowerCase().includes(kw) || r.key.includes(kw));
+                },
+                smsPreviewText() {
+                    if (!this.current) return '';
+                    return `【仓储预警】规则：${this.current.name}\n阈值：${this.form.threshold}\n周期：${this.form.periodDays}天\n说明：${this.form.note || '无'}\n请及时处理。`;
+                },
+                statusLabel() {
+                    if (!this.current) return '未选择';
+                    return this.form.enabled ? '已启用' : '已停用';
+                },
+                currentStatusClass() {
+                    return this.form.enabled ? 'text-emerald-600' : 'text-slate-500';
+                }
+            },
+            methods: {
+                selectRule(rule) {
+                    this.current = rule;
+                    // 从本地存储（模拟后端）加载已保存配置
+                    const saved = JSON.parse(localStorage.getItem('alert_config_' + rule.key) || 'null');
+                    if (saved) {
+                        this.form.threshold = saved.threshold;
+                        this.form.periodDays = saved.periodDays;
+                        this.form.enabled = saved.enabled;
+                        this.form.note = saved.note;
+                    } else {
+                        // 默认值
+                        this.form.threshold = 0;
+                        this.form.periodDays = 1;
+                        this.form.enabled = true;
+                        this.form.note = '';
+                    }
+                    this.errors = {};
+                    this.errorMessage = '';
+                },
+                validateForm() {
+                    this.errors = {};
+                    if (this.form.threshold == null || isNaN(this.form.threshold) || this.form.threshold < 0) {
+                        this.errors.threshold = true;
+                    }
+                    if (this.form.periodDays == null || isNaN(this.form.periodDays) || this.form.periodDays < 0) {
+                        this.errors.periodDays = true;
+                    }
+                    if (Object.keys(this.errors).length > 0) {
+                        this.errorMessage = '参数格式错误，请检查输入（需为非负数）。';
+                        return false;
+                    }
+                    this.errorMessage = '';
+                    return true;
+                },
+                saveConfig() {
+                    if (!this.current) return;
+                    if (!this.validateForm()) return;
+                    this.status = 'saving';
+                    // 模拟保存过程：20% 概率失败
+                    setTimeout(() => {
+                        const fail = Math.random() < 0.2;
+                        if (fail) {
+                            this.status = 'idle';
+                            this.errorMessage = '保存失败，请稍后重试';
+                            // 记录失败（不入历史）
+                        } else {
+                            // 持久化到 localStorage（模拟数据库写入）
+                            const key = 'alert_config_' + this.current.key;
+                            const prev = JSON.parse(localStorage.getItem(key) || 'null');
+                            localStorage.setItem(key, JSON.stringify({
+                                threshold: this.form.threshold,
+                                periodDays: this.form.periodDays,
+                                enabled: this.form.enabled,
+                                note: this.form.note,
+                                updatedAt: new Date().toISOString()
+                            }));
+                            // 写历史日志
+                            const historyKey = 'alert_history';
+                            const hist = JSON.parse(localStorage.getItem(historyKey) || '[]');
+                            hist.unshift({
+                                time: new Date().toLocaleString(),
+                                user: '管理员',
+                                ruleKey: this.current.key,
+                                ruleName: this.current.name,
+                                delta: JSON.stringify({ before: prev, after: { threshold: this.form.threshold, periodDays: this.form.periodDays, enabled: this.form.enabled, note: this.form.note } }, null, 2)
+                            });
+                            localStorage.setItem(historyKey, JSON.stringify(hist));
+                            // 更新显示
+                            this.current.valueDisplay = this.form.threshold;
+                            this.status = 'saved';
+                            this.errorMessage = '';
+                            // 若勾选短信或系统消息，可在此触发通知（模拟）
+                            if (this.notify.sms) {
+                                // 模拟发送：只弹出预览提示
+                                this.showSmsPreview = true;
+                            }
+                        }
+                    }, 700);
+                },
+                resetForm() {
+                    if (!this.current) return;
+                    const saved = JSON.parse(localStorage.getItem('alert_config_' + this.current.key) || 'null');
+                    if (saved) {
+                        this.form.threshold = saved.threshold;
+                        this.form.periodDays = saved.periodDays;
+                        this.form.enabled = saved.enabled;
+                        this.form.note = saved.note;
+                    } else {
+                        this.form.threshold = 0;
+                        this.form.periodDays = 1;
+                        this.form.enabled = true;
+                        this.form.note = '';
+                    }
+                    this.errors = {};
+                    this.errorMessage = '';
+                },
+                previewSms() {
+                    this.showSmsPreview = true;
+                },
+                openHistory() {
+                    const hist = JSON.parse(localStorage.getItem('alert_history') || '[]');
+                    this.history = hist.map(h => ({ time: h.time, user: h.user, ruleName: h.ruleName, delta: h.delta }));
+                    this.showHistory = true;
+                }
+            },
+            mounted() {
+                // 默认选中第一项
+                if (this.rules.length > 0) this.selectRule(this.rules[0]);
+            }
+        }).mount('#app');
+    </script>
+</body>
+
+</html>
